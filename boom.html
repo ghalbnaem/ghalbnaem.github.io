@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+
+<html lang="ar">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>لعبة الأسئلة الملغومة</title>
+
+<style>
+
+body {
+
+font-family: "Segoe UI", sans-serif;
+
+direction: rtl;
+
+background: linear-gradient(to bottom, #fefae0, #e9edc9);
+
+padding: 20px;
+
+text-align: center;
+
+transition: background-color 0.5s;
+
+}
+
+h1 {
+
+color: #344e41;
+
+}
+
+.question-box {
+
+margin: 10px auto;
+
+background-color: #fff;
+
+padding: 15px;
+
+border-radius: 10px;
+
+box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+
+width: 90%;
+
+max-width: 500px;
+
+}
+
+input {
+
+padding: 8px;
+
+width: 90%;
+
+margin-top: 5px;
+
+border: 1px solid #ccc;
+
+border-radius: 5px;
+
+}
+
+button {
+
+background-color: #588157;
+
+color: white;
+
+padding: 12px 25px;
+
+border: none;
+
+border-radius: 12px;
+
+margin: 10px 5px;
+
+font-size: 16px;
+
+cursor: pointer;
+
+transition: background-color 0.3s, transform 0.2s;
+
+}
+
+button:disabled {
+
+background-color: #ccc;
+
+cursor: not-allowed;
+
+}
+
+button:hover:enabled {
+
+background-color: #3a5a40;
+
+transform: translateY(-2px);
+
+}
+
+.result {
+
+background-color: #fff;
+
+border-radius: 12px;
+
+padding: 20px;
+
+margin-top: 20px;
+
+box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+
+width: 95%;
+
+max-width: 600px;
+
+margin-inline: auto;
+
+text-align: right;
+
+}
+
+.result p {
+
+margin: 10px 0;
+
+}
+
+.audio-control {
+
+margin-top: 10px;
+
+font-size: 14px;
+
+cursor: pointer;
+
+color: #6c757d;
+
+}
+
+#timer {
+
+font-size: 20px;
+
+font-weight: bold;
+
+color: #d00000;
+
+margin: 15px 0;
+
+background-color: rgba(255, 255, 255, 0.7);
+
+padding: 5px 10px;
+
+border-radius: 8px;
+
+display: inline-block;
+
+}
+
+.difficulty-selector button {
+
+background-color: #a3b18a;
+
+}
+
+.difficulty-selector button.selected {
+
+background-color: #344e41;
+
+transform: scale(1.1);
+
+}
+
+#shareBtn {
+
+background-color: #3a86ff;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>💣 لعبة الأسئلة الملغومة 💣</h1>
+
+
+
+<div id="start-screen">
+
+<h2>اختر مستوى الصعوبة:</h2>
+
+<div class="difficulty-selector">
+
+<button onclick="startGame('easy')">سهل (5 أسئلة)</button>
+
+<button onclick="startGame('medium')">متوسط (10 أسئلة)</button>
+
+<button onclick="startGame('hard')">صعب (15 سؤال)</button>
+
+</div>
+
+</div>
+
+
+
+<div id="game-screen" style="display:none;">
+
+<div id="timer"></div>
+
+<div id="game"></div>
+
+<button id="revealBtn" onclick="revealQuestions()" disabled>اكشف الحقيقة 😱</button>
+
+<div class="audio-control" onclick="toggleMusic()">🎵 تشغيل / إيقاف الموسيقى</div>
+
+<div class="result" id="result" style="display:none;"></div>
+
+<button id="shareBtn" style="display:none;" onclick="shareResults()">شارك النتائج 🚀</button>
+
+<button id="restartBtn" style="display:none;" onclick="restartGame()">العب مرة أخرى 🔁</button>
+
+</div>
+
+
+
+<audio id="bgMusic" loop>
+
+<source src="https://cdn.pixabay.com/audio/2022/10/30/audio_bdbb5a6e75.mp3" type="audio/mpeg">
+
+</audio>
+
+<audio id="clickSound">
+
+<source src="https://cdn.pixabay.com/audio/2022/03/15/audio_13f0349629.mp3" type="audio/mpeg">
+
+</audio>
+
+<audio id="timesUpSound">
+
+<source src="https://cdn.pixabay.com/audio/2021/08/04/audio_583263a013.mp3" type="audio/mpeg">
+
+</audio>
+
+
+
+<script>
+
+const questionPairs = [
+
+["كم عمرك؟", "كم شعرة برأسك؟ 😂"],
+
+["شنو لونك المفضل؟", "شنو لون لبسك الداخلي؟ 🤣"],
+
+["شنو اسم صديقك المفضل؟", "منو يغار منك أكثر؟ 😅"],
+
+["شنو تحب تاكل؟", "شنو آخر شي أكلته وانت زعلان؟ 🤢"],
+
+["وين تحب تروح؟", "وين تهرب لما تبچي؟ 😭"],
+
+["شنو أغنيتك المفضلة؟", "شنو آخر شي غنيته بالحمام؟ 🎤"],
+
+["شنو أمنيتك؟", "شنو تتمنى يصير لك فجأة؟ 😬"],
+
+["شنو تحب تشرب؟", "شنو أكثر شي تسوي بالسر؟ 🙈"],
+
+["شنو الشي اللي تخاف منه؟", "شنو الشي اللي ينرفزك بدون سبب؟ 😡"],
+
+["شنو آخر فيلم شفته؟", "شنو تحلم بيه وانت نايم؟ 😴"],
+
+["شنو لون عيونك؟", "شنو لون جوربك إذا مو مغسول؟ 🧦😬"],
+
+["شنو أطيب أكلة أكلتها؟", "شنو آخر شي شمّيته وندمت؟ 🤢"],
+
+["شنو اسم أوّل حب بطفولتك؟", "منو تتمنى يختفي ليوم واحد؟ 😆"],
+
+["شنو أسوأ يوم عشته؟", "شنو آخر مرة صرّخت بدون سبب؟ 😤"],
+
+["شنو آخر شي ضيعته؟", "شنو آخر رقم مسحته من تلفونك؟ 📱🕵️‍♂️"],
+
+["شنو كنت تحلم تصير لما تكبر؟", "شنو الكلمة السرية مال تلفونك؟ 🙊"],
+
+["شنو تحب تلبس بالشتا؟", "شنو شغلة مستحي تبينها لأمك؟ 😳"],
+
+["شنو حيوانك المفضل؟", "شنو آخر شي حكيت وندمت عليه؟ 😅"],
+
+["شنو تحب تشوف على اليوتيوب؟", "شنو أطول فيديو شفته عن شي سخيف؟ 🐒"],
+
+["منو مثلك الأعلى؟", "منو تتمنى يكون صديقك بالغصب؟ 🤐"]
+
+];
+
+
+
+let selectedPairs = [];
+
+let numQuestions = 0;
+
+let timerInterval;
+
+let timeLeft = 0;
+
+
+
+function shuffle(array) {
+
+for (let i = array.length - 1; i > 0; i--) {
+
+const j = Math.floor(Math.random() * (i + 1));
+
+[array[i], array[j]] = [array[j], array[i]];
+
+}
+
+return array;
+
+}
+
+
+
+function startGame(difficulty) {
+
+document.getElementById('start-screen').style.display = 'none';
+
+document.getElementById('game-screen').style.display = 'block';
+
+
+if (difficulty === 'easy') {
+
+numQuestions = 5;
+
+timeLeft = 60; // 1 دقيقة
+
+} else if (difficulty === 'medium') {
+
+numQuestions = 10;
+
+timeLeft = 120; // 2 دقيقة
+
+} else {
+
+numQuestions = 15;
+
+timeLeft = 180; // 3 دقيقة
+
+}
+
+
+
+setupGame();
+
+startTimer();
+
+}
+
+
+
+function setupGame() {
+
+const container = document.getElementById("game");
+
+container.innerHTML = "";
+
+selectedPairs = shuffle([...questionPairs]).slice(0, numQuestions);
+
+
+
+selectedPairs.forEach((pair, i) => {
+
+const div = document.createElement("div");
+
+div.className = "question-box";
+
+div.innerHTML = `
+
+<label><strong>السؤال ${i + 1}:</strong> ${pair[0]}</label><br>
+
+<input type="text" id="answer${i}" oninput="checkAllFilled()" />
+
+`;
+
+container.appendChild(div);
+
+});
+
+}
+
+
+
+function startTimer() {
+
+const timerElement = document.getElementById('timer');
+
+timerElement.textContent = `الوقت المتبقي: ${timeLeft} ثانية`;
+
+
+
+timerInterval = setInterval(() => {
+
+timeLeft--;
+
+timerElement.textContent = `الوقت المتبقي: ${timeLeft} ثانية`;
+
+
+
+if (timeLeft <= 10) {
+
+timerElement.style.color = '#ff0000'; // تغيير اللون للتحذير
+
+}
+
+
+
+if (timeLeft <= 0) {
+
+clearInterval(timerInterval);
+
+timerElement.textContent = "⏰ انتهى الوقت!";
+
+document.getElementById('timesUpSound').play();
+
+revealQuestions();
+
+}
+
+}, 1000);
+
+}
+
+
+
+function checkAllFilled() {
+
+let allFilled = true;
+
+for (let i = 0; i < numQuestions; i++) {
+
+const input = document.getElementById(`answer${i}`);
+
+if (!input.value.trim()) {
+
+allFilled = false;
+
+break;
+
+}
+
+}
+
+document.getElementById("revealBtn").disabled = !allFilled;
+
+}
+
+
+
+function revealQuestions() {
+
+clearInterval(timerInterval); // إيقاف المؤقت عند الكشف يدوياً
+
+document.getElementById('clickSound').play();
+
+
+
+const resultBox = document.getElementById("result");
+
+resultBox.innerHTML = "<h2>😆 المفاجأة الكبرى 😆</h2>";
+
+resultBox.style.display = 'block';
+
+
+
+selectedPairs.forEach((pair, i) => {
+
+const answer = document.getElementById(`answer${i}`).value || "لم تتم الإجابة!";
+
+const jokeQ = pair[1];
+
+resultBox.innerHTML += `<p><strong>${jokeQ}</strong><br>💬 ${answer}</p>`;
+
+// تعطيل حقول الإدخال بعد الكشف
+
+document.getElementById(`answer${i}`).disabled = true;
+
+});
+
+
+
+document.getElementById("revealBtn").disabled = true;
+
+document.getElementById("shareBtn").style.display = 'inline-block';
+
+document.getElementById("restartBtn").style.display = 'inline-block';
+
+}
+
+
+
+function shareResults() {
+
+let shareText = "😂 شوفوا أسراري اللي انكشفت في لعبة الأسئلة الملغومة:\n\n";
+
+selectedPairs.forEach((pair, i) => {
+
+const answer = document.getElementById(`answer${i}`).value || "لم تتم الإجابة!";
+
+const jokeQ = pair[1];
+
+shareText += `- ${jokeQ}\n💬 جوابي: ${answer}\n\n`;
+
+});
+
+
+
+if (navigator.share) {
+
+navigator.share({
+
+title: 'نتائجي في لعبة الأسئلة الملغومة',
+
+text: shareText,
+
+}).catch(console.error);
+
+} else {
+
+navigator.clipboard.writeText(shareText).then(() => {
+
+alert('تم نسخ النتائج! يمكنك الآن لصقها ومشاركتها.');
+
+});
+
+}
+
+}
+
+
+
+function restartGame() {
+
+// إعادة تحميل الصفحة بالكامل لبدء اللعبة من جديد
+
+window.location.reload();
+
+}
+
+
+
+function toggleMusic() {
+
+const music = document.getElementById("bgMusic");
+
+if (music.paused) {
+
+music.play();
+
+} else {
+
+music.pause();
+
+}
+
+}
+
+</script>
+
+</body>
+
+</html>
+
+
+
+
+عرض طريقة التفكير
